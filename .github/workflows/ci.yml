@@ -1,0 +1,105 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    env:
+      # Глобальные переменные окружения для всего job
+      NODE_ENV: test
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER || 'helltv_user' }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'helltv_password' }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB || 'helltv_test' }}
+      REDIS_HOST: ${{ secrets.REDIS_HOST || 'localhost' }}
+      REDIS_PORT: ${{ secrets.REDIS_PORT || '6379' }}
+      REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || '' }}
+    
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: helltv_password
+          POSTGRES_USER: helltv_user
+          POSTGRES_DB: helltv_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:8-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U helltv_user; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+    
+    - name: Wait for Redis
+      run: |
+        # Простая проверка через netcat (встроенная команда)
+        until nc -z localhost 6379; do
+          echo "Waiting for Redis..."
+          sleep 2
+        done
+        echo "Redis is ready!"
+    
+    - name: Install PostgreSQL client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+    
+    - name: Setup test database
+      run: |
+        PGPASSWORD=$POSTGRES_PASSWORD createdb -h localhost -p 5432 -U $POSTGRES_USER $POSTGRES_DB || echo "Database already exists"
+        DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB" npx prisma migrate deploy
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Run unit tests
+      run: npm run test:unit
+    
+    - name: Run integration tests
+      run: |
+        DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB" \
+        TEST_DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB" \
+        REDIS_HOST=$REDIS_HOST \
+        REDIS_PORT=$REDIS_PORT \
+        REDIS_PASSWORD=$REDIS_PASSWORD \
+        REDIS_DB=1 \
+        npm run test:integration
+    
+    - name: Build application
+      run: npm run build
+

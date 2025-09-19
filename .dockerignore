@@ -1,0 +1,49 @@
+# Зависимости
+node_modules
+npm-debug.log*
+
+# Тесты
+test
+
+# Логи
+logs
+*.log
+
+# Временные файлы
+.tmp
+.temp
+
+# IDE файлы
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS файлы
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Документация
+*.md
+
+# Конфигурационные файлы разработки
+.env
+.env.local
+.env.development
+.env.test
+
+# Сборка
+dist
+build
+
+# Кеш
+.npm
