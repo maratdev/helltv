@@ -148,7 +148,7 @@ export class BalanceController {
     },
   })
   @ApiResponse({ status: 404, description: 'Пользователь не найден' })
-  @Post(':userId/recalculate')
+  @Get(':userId/recalculate')
   @HttpCode(HttpStatus.OK)
   async recalculateBalance(
     @Param('userId', ParseIntPipe) userId: number,
