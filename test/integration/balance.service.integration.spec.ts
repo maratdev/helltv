@@ -58,7 +58,7 @@ describe('BalanceService Integration', () => {
   describe('recalculateBalance', () => {
     it('should recalculate balance from transactions', async () => {
       const user = await (prisma as any).user.create({
-        data: { balance: 1000 },
+        data: { balance: 1000 }, // Исходный баланс игнорируется
       });
 
       await (prisma as any).transaction.createMany({
@@ -83,21 +83,22 @@ describe('BalanceService Integration', () => {
 
       const result = await balanceService.recalculateBalance(user.id);
 
-      expect(result.balance).toBe(1400);
+      // Новый расчет: 0 + 500 - 200 + 100 = 400
+      expect(result.balance).toBe(400);
       expect(result.id).toBe(user.id);
 
       const updatedUser = await (prisma as any).user.findUnique({
         where: { id: user.id },
       });
 
-      expect(updatedUser?.balance).toBe(1400);
+      expect(updatedUser?.balance).toBe(400);
     });
   });
 
   describe('debit operation', () => {
     it('should create user, perform debit and save transaction to database', async () => {
       const user = await (prisma as any).user.create({
-        data: { balance: 1000 },
+        data: { balance: 1000 }, // Исходный баланс игнорируется
       });
 
       const operation: BalanceOperationDto = {
@@ -107,7 +108,8 @@ describe('BalanceService Integration', () => {
 
       const result = await balanceService.debit(operation);
 
-      expect(result.balance).toBe(850);
+      // Новый расчет: 0 - 150 = -150
+      expect(result.balance).toBe(-150);
       expect(result.userId).toBe(user.id);
 
       const transaction = await (prisma as any).transaction.findFirst({
@@ -122,14 +124,14 @@ describe('BalanceService Integration', () => {
         where: { id: user.id },
       });
 
-      expect(updatedUser?.balance).toBe(850);
+      expect(updatedUser?.balance).toBe(-150);
     });
   });
 
   describe('credit operation', () => {
     it('should create user, perform credit and save transaction to database', async () => {
       const user = await (prisma as any).user.create({
-        data: { balance: 500 },
+        data: { balance: 500 }, // Исходный баланс игнорируется
       });
 
       const operation: BalanceOperationDto = {
@@ -139,7 +141,8 @@ describe('BalanceService Integration', () => {
 
       const result = await balanceService.credit(operation);
 
-      expect(result.balance).toBe(800);
+      // Новый расчет: 0 + 300 = 300
+      expect(result.balance).toBe(300);
       expect(result.userId).toBe(user.id);
 
       const transaction = await (prisma as any).transaction.findFirst({

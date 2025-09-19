@@ -156,13 +156,9 @@ export class BalanceService extends BaseService {
 
     this.logger.debug(`Recalculating balance for user ${userId}`);
 
-    const user = await this.validateUserExists(userId);
     const transactions = await this.transactionRepository.findByUserId(userId);
 
-    const balance = this.calculateBalanceFromTransactions(
-      transactions,
-      user.balance,
-    );
+    const balance = this.calculateBalanceFromTransactions(transactions);
 
     const updatedUser = await this.updateUserBalance(userId, balance);
 
@@ -181,15 +177,13 @@ export class BalanceService extends BaseService {
   /**
    * Вычисление баланса на основе транзакций
    * @param transactions - массив транзакций
-   * @param initialBalance - начальный баланс
    * @returns number - вычисленный баланс
    */
   private calculateBalanceFromTransactions(
     transactions: Transaction[],
-    initialBalance: number,
   ): number {
     if (transactions.length === 0) {
-      return initialBalance;
+      return 0;
     }
 
     return transactions.reduce((balance, transaction) => {
@@ -199,6 +193,6 @@ export class BalanceService extends BaseService {
         return balance - transaction.amount;
       }
       return balance;
-    }, initialBalance);
+    }, 0);
   }
 }

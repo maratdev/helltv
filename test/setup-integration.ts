@@ -13,11 +13,8 @@ let isSetupComplete = false;
 beforeAll(async () => {
   if (isSetupComplete) return;
 
-  console.log('Настройка тестовой базы данных...');
-
   try {
     // Применяем миграции к тестовой базе данных
-    console.log('Применение миграций Prisma...');
     execSync('npx prisma migrate deploy', {
       stdio: 'inherit',
       env: {
@@ -37,16 +34,9 @@ beforeAll(async () => {
 
     // Проверяем подключение к БД
     await prisma.$connect();
-    console.log('Тестовая база данных готова!');
     isSetupComplete = true;
   } catch (error) {
     console.error('Ошибка настройки тестовой базы данных:', error);
-    console.log(
-      'Убедитесь, что PostgreSQL запущен и доступен по адресу localhost:5432',
-    );
-    console.log(
-      'Для запуска используйте: docker compose -f docker-compose.dev.yml up postgres -d',
-    );
     throw error;
   }
 });
