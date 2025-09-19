@@ -13,9 +13,3 @@ export class BalanceInfo {
   })
   userId: number;
 }
-
-export interface TransactionRequest {
-  userId: number;
-  amount: number;
-  description?: string;
-}
