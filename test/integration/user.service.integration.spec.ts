@@ -51,6 +51,14 @@ describe('UserService Integration', () => {
       expect(userInDb).toBeDefined();
       expect(userInDb?.balance).toBe(1000);
       expect(userInDb?.id).toBe(result.id);
+
+      const transaction = await (prisma as any).transaction.findFirst({
+        where: { userId: result.id },
+      });
+
+      expect(transaction).toBeDefined();
+      expect(transaction?.amount).toBe(1000);
+      expect(transaction?.action).toBe('credit');
     });
 
     it('should create user with zero balance by default', async () => {
